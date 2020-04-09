@@ -30,7 +30,6 @@
 #include "src/core/backend.h"
 #include "src/core/logging.h"
 #include "src/core/server.h"
-#include "src/core/status.h"
 
 namespace nvidia { namespace inferenceserver {
 
@@ -62,17 +61,6 @@ TrtMemTypeToTriton(TRTSERVER_Memory_Type mem_type)
       return TRITONSERVER_MEMORY_GPU;
       break;
   }
-}
-
-InferenceRequest::InferenceRequest(
-    const std::string& model_name, const int64_t requested_model_version,
-    const int64_t actual_model_version, const uint32_t protocol_version)
-    : needs_normalization_(true), model_name_(model_name),
-      requested_model_version_(requested_model_version),
-      actual_model_version_(actual_model_version),
-      protocol_version_(protocol_version), flags_(0), correlation_id_(0),
-      batch_size_(0), priority_(0), timeout_us_(0)
-{
 }
 
 Status

@@ -342,16 +342,9 @@ TritonServerOptions::TritonServerOptions()
 //
 class TritonInferenceRequest {
  public:
-  TritonInferenceRequest(
-      const std::shared_ptr<ni::InferenceBackend>& backend,
-      ni::InferenceRequest* request)
-      : backend_(backend), request_(request), status_(ni::Status::Success)
+  TritonInferenceRequest(ni::InferenceRequest* request)
+      : request_(request), status_(ni::Status::Success)
   {
-  }
-
-  const std::shared_ptr<ni::InferenceBackend>& Backend() const
-  {
-    return backend_;
   }
 
   const std::shared_ptr<ni::InferenceRequest>& Request() const
@@ -372,7 +365,6 @@ class TritonInferenceRequest {
   }
 
  private:
-  std::shared_ptr<ni::InferenceBackend> backend_;
   std::shared_ptr<ni::InferenceRequest> request_;
   ni::Status status_;
   std::shared_ptr<ni::InferResponseProvider> response_provider_;
@@ -1419,11 +1411,11 @@ TRITONSERVER_InferenceRequestNew(
       lserver->GetInferenceBackend(model_name, model_int_version, &backend));
 
   std::unique_ptr<ni::InferenceRequest> request(new ni::InferenceRequest(
-      model_name, model_int_version, backend->Version(),
+      backend, model_name, model_int_version, backend->Version(),
       2 /* protocol_version */));
 
   *inference_request = reinterpret_cast<TRITONSERVER_InferenceRequest*>(
-      new TritonInferenceRequest(backend, request.release()));
+      new TritonInferenceRequest(request.release()));
 
   return nullptr;  // Success
 }
@@ -1728,7 +1720,7 @@ TRITONSERVER_ServerInferAsync(
       reinterpret_cast<TritonServerResponseAllocator*>(response_allocator);
 
   const auto& lrequest = ltrtrequest->Request();
-  const auto& lbackend = ltrtrequest->Backend();
+  const auto& lbackend = lrequest->Backend();
 
   ltrtrequest->SetResponse(nullptr);
   RETURN_IF_STATUS_ERROR(lrequest->PrepareForInference(*lbackend));

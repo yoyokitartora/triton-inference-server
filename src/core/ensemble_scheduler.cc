@@ -532,7 +532,7 @@ EnsembleContext::InitStep(const size_t step_idx, std::shared_ptr<Step>* step)
   // SetBatchSize and adjust the input/output tensors to have
   // appropriate shape
   auto irequest = std::make_shared<InferenceRequest>(
-      istep.model_name_, istep.model_version_, istep.model_version_,
+      backend, istep.model_name_, istep.model_version_, istep.model_version_,
       1 /* protocol_version */);
 
   // Request for ensemble model cannot override the timeout values for the

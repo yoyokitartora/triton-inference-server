@@ -491,16 +491,9 @@ TrtServerRequestOptions::InferRequestHeader() const
 //
 class TrtInferenceRequest {
  public:
-  TrtInferenceRequest(
-      const std::shared_ptr<ni::InferenceBackend>& backend,
-      ni::InferenceRequest* request)
-      : backend_(backend), request_(request), status_(ni::Status::Success)
+  TrtInferenceRequest(ni::InferenceRequest* request)
+      : request_(request), status_(ni::Status::Success)
   {
-  }
-
-  const std::shared_ptr<ni::InferenceBackend>& Backend() const
-  {
-    return backend_;
   }
 
   const std::shared_ptr<ni::InferenceRequest>& Request() const
@@ -521,7 +514,6 @@ class TrtInferenceRequest {
   }
 
  private:
-  std::shared_ptr<ni::InferenceBackend> backend_;
   std::shared_ptr<ni::InferenceRequest> request_;
   ni::Status status_;
   std::shared_ptr<ni::InferResponseProvider> response_provider_;
@@ -1035,8 +1027,8 @@ TRTSERVER_InferenceRequestProviderNewV2(
       loptions->ModelName(), loptions->ModelVersion(), &backend));
 
   std::unique_ptr<ni::InferenceRequest> request(new ni::InferenceRequest(
-      loptions->ModelName(), loptions->ModelVersion(), backend->Version(),
-      lserver->ProtocolVersion()));
+      backend, loptions->ModelName(), loptions->ModelVersion(),
+      backend->Version(), lserver->ProtocolVersion()));
   request->SetId(loptions->InferRequestHeader()->id());
 #ifdef TRTIS_ENABLE_GRPC_V2
   request->SetIdStr(loptions->IdStr());
@@ -1060,7 +1052,7 @@ TRTSERVER_InferenceRequestProviderNewV2(
   RETURN_IF_STATUS_ERROR(request->PrepareForInference(*backend));
 
   *request_provider = reinterpret_cast<TRTSERVER_InferenceRequestProvider*>(
-      new TrtInferenceRequest(backend, request.release()));
+      new TrtInferenceRequest(request.release()));
 
   return nullptr;  // Success
 }
@@ -1735,7 +1727,7 @@ TRTSERVER_ServerInferAsync(
       reinterpret_cast<TrtServerResponseAllocator*>(response_allocator);
 
   const auto& lrequest = ltrtrequest->Request();
-  const auto& lbackend = ltrtrequest->Backend();
+  const auto& lbackend = lrequest->Backend();
 
   ltrtrequest->SetResponse(nullptr);
   RETURN_IF_STATUS_ERROR(lrequest->PrepareForInference(*lbackend));
@@ -1828,11 +1820,11 @@ TRTSERVER2_InferenceRequestNew(
       lserver->GetInferenceBackend(model_name, model_int_version, &backend));
 
   std::unique_ptr<ni::InferenceRequest> request(new ni::InferenceRequest(
-      model_name, model_int_version, backend->Version(),
+      backend, model_name, model_int_version, backend->Version(),
       lserver->ProtocolVersion()));
 
   *inference_request = reinterpret_cast<TRTSERVER2_InferenceRequest*>(
-      new TrtInferenceRequest(backend, request.release()));
+      new TrtInferenceRequest(request.release()));
 
   return nullptr;  // Success
 }
@@ -2160,7 +2152,7 @@ TRTSERVER2_ServerInferAsync(
       reinterpret_cast<TrtServerResponseAllocator*>(response_allocator);
 
   const auto& lrequest = ltrtrequest->Request();
-  const auto& lbackend = ltrtrequest->Backend();
+  const auto& lbackend = lrequest->Backend();
 
   ltrtrequest->SetResponse(nullptr);
   RETURN_IF_STATUS_ERROR(lrequest->PrepareForInference(*lbackend));

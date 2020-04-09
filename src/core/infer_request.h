@@ -183,9 +183,18 @@ class InferenceRequest {
 
   // InferenceRequest
   InferenceRequest(
+      const std::shared_ptr<InferenceBackend>& backend,
       const std::string& model_name, const int64_t requested_model_version,
-      const int64_t actual_model_version, const uint32_t protocol_version);
+      const int64_t actual_model_version, const uint32_t protocol_version)
+      : needs_normalization_(true), backend_(backend), model_name_(model_name),
+        requested_model_version_(requested_model_version),
+        actual_model_version_(actual_model_version),
+        protocol_version_(protocol_version), flags_(0), correlation_id_(0),
+        batch_size_(0), priority_(0), timeout_us_(0)
+  {
+  }
 
+  const std::shared_ptr<InferenceBackend>& Backend() const { return backend_; }
   uint32_t ProtocolVersion() const { return protocol_version_; }
   const std::string& ModelName() const { return model_name_; }
   int64_t RequestedModelVersion() const { return requested_model_version_; }
@@ -328,6 +337,14 @@ class InferenceRequest {
   // causes normalization to be required when preparing the request
   // for inference.
   bool needs_normalization_;
+
+  // The backend associated with this request. For normal requests
+  // this will always be defined and acts to keep the backend loaded
+  // as long as this request is live. It is not otherwise expected to
+  // be used directly by the request. It may be nullptr for cases
+  // where the backend itself created the request (like running
+  // requests for warmup).
+  std::shared_ptr<InferenceBackend> backend_;
 
   std::string model_name_;
 
